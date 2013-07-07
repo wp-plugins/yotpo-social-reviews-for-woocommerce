@@ -1,0 +1,39 @@
+#icon-woocommerce-yotpo-settings-page {
+    background: transparent url( '../images/logo.png' ) no-repeat;
+}
+
+.form-table th {
+	width: 300px;
+}
+
+.button-primary.submit-btn {
+	margin-left:92px;
+}
+.button-secondary.not-user-btn {
+	margin-left: 12px;
+}
+
+.buttons-container {
+	width: 501px;
+}
+.button-secondary.past-orders-btn {
+	float: right;
+}
+#save_yotpo_settings {
+	float: right;
+	margin-left: 5px;
+}
+
+.yotpo-widget-location {
+	width: 158px;
+}
+.y-register-title {
+	font-size: 22px;
+}
+.yotpo-terms{
+	color: rgb(138, 138, 138);
+	font-size: 11.8px;
+}
+#wpfooter{
+	display: none;
+}
