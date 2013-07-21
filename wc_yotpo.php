@@ -3,7 +3,7 @@
 	Plugin Name: Yotpo Social Reviews for Woocommerce
 	Description: Yotpo Social Reviews helps Woocommerce store owners generate a ton of reviews for their products. Yotpo is the only solution which makes it easy to share your reviews automatically to your social networks to gain a boost in traffic and an increase in sales.
 	Author: Yotpo
-	Version: 1.0.3
+	Version: 1.0.4
 	Author URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link	
 	Plugin URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link
  */
@@ -13,14 +13,14 @@ add_action('plugins_loaded', 'wc_yotpo_init');
 add_action('init', 'wc_yotpo_redirect');
 		
 function wc_yotpo_init() {
-	$is_admin = is_admin();
+	$is_admin = is_admin();	
 	if($is_admin) {
 		include( plugin_dir_path( __FILE__ ) . 'templates/wc-yotpo-settings.php');
-		include( plugin_dir_path( __FILE__ ) . 'lib/yotpo-api/yotpo.phar');
+		include(plugin_dir_path( __FILE__ ) . 'lib/yotpo-api/Yotpo.php');
 		add_action( 'admin_menu', 'wc_yotpo_admin_settings' );
 	}
 	$yotpo_settings = get_option('yotpo_settings', wc_yotpo_get_degault_settings());
-	if(!empty($yotpo_settings['app_key'])) {			
+	if(!empty($yotpo_settings['app_key']) && wc_yotpo_compatible()) {			
 		if(!$is_admin) {
 			add_action( 'wp_enqueue_scripts', 'wc_yotpo_load_js' );
 			add_action( 'template_redirect', 'wc_yotpo_front_end_init' );	
@@ -184,10 +184,10 @@ function wc_yotpo_map($order_id) {
 			$purchase_data = wc_yotpo_get_single_map_data($order_id);
 			if(!is_null($purchase_data) && is_array($purchase_data)) {
 				$yotpo_settings = get_option('yotpo_settings', wc_yotpo_get_degault_settings());
-				$yotpo_api = new \Yotpo\Yotpo($yotpo_settings['app_key'], $yotpo_settings['secret']);
+				$yotpo_api = new Yotpo($yotpo_settings['app_key'], $yotpo_settings['secret']);
 				$get_oauth_token_response = $yotpo_api->get_oauth_token();
-				if(!empty($get_oauth_token_response) && !empty($get_oauth_token_response->access_token)) {
-					$purchase_data['utoken'] = $get_oauth_token_response->access_token;
+				if(!empty($get_oauth_token_response) && !empty($get_oauth_token_response['access_token'])) {
+					$purchase_data['utoken'] = $get_oauth_token_response['access_token'];
 					$purchase_data['platform'] = 'woocommerce';
 					$response = $yotpo_api->create_purchase($purchase_data);			
 			}
@@ -285,21 +285,22 @@ function wc_yotpo_send_past_orders() {
 	$yotpo_settings = get_option('yotpo_settings', wc_yotpo_get_degault_settings());
 	if (!empty($yotpo_settings['app_key']) && !empty($yotpo_settings['secret']))
 	{
-		$past_orders = wc_yotpo_get_past_orders();
+		$past_orders = wc_yotpo_get_past_orders();		
 		$is_success = true;
 		if(!is_null($past_orders) && is_array($past_orders)) {
-			$yotpo_api = new \Yotpo\Yotpo($yotpo_settings['app_key'], $yotpo_settings['secret']);
+			$yotpo_api = new Yotpo($yotpo_settings['app_key'], $yotpo_settings['secret']);
 			$get_oauth_token_response = $yotpo_api->get_oauth_token();
-			if(!empty($get_oauth_token_response) && !empty($get_oauth_token_response->access_token)) {
+			if(!empty($get_oauth_token_response) && !empty($get_oauth_token_response['access_token'])) {
 				foreach ($past_orders as $post_bulk) 
 					if (!is_null($post_bulk))
 					{
-						$post_bulk['utoken'] = $get_oauth_token_response->access_token;
+						$post_bulk['utoken'] = $get_oauth_token_response['access_token'];
 						$response = $yotpo_api->create_purchases($post_bulk);						
-						if ($response->code != 200 && $is_success)
+						if ($response['code'] != 200 && $is_success)
 						{
 							$is_success = false;
-							wc_yotpo_display_message($response->status->message, true);
+							$message = !empty($response['status']) && !empty($response['status']['message']) ? $response['status']['message'] : 'Error occurred';
+							wc_yotpo_display_message($message, true);
 						}
 					}
 				if ($is_success)
@@ -356,4 +357,8 @@ function wc_yotpo_admin_styles($hook) {
 		wp_enqueue_style( 'yotpoSettingsStylesheet', plugins_url('assets/css/yotpo.css', __FILE__));
 	}
 	wp_enqueue_style('yotpoSideLogoStylesheet', plugins_url('assets/css/side-menu-logo.css', __FILE__));
+}
+
+function wc_yotpo_compatible() {
+	return version_compare(phpversion(), '5.2.0') >= 0 && function_exists('curl_init');
 }
