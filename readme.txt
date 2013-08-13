@@ -95,9 +95,14 @@ Yes. To connect your social accounts to Yotpo, just log into yotpo.com, and clic
 * Initial Release.
 = 1.0.3 - 16/07/2013 =
 * Changes in text.
-= 1.0.3 - 21/07/2013 =
+= 1.0.4 - 21/07/2013 =
 * Replace yotpo.phar file with Yotpo.php, and change minimum requirements from PHP 5.3.0 to PHP 5.2.0 and above .
 * Ensure that the minimum requirements are met.
+= 1.0.5 - 31/07/2013 =
+* Remove widget from products which are not checked with 'Enable reviews' checkbox.
+* Fix bugs.
+* Disable woocommerce ratings upon activation and restore value of woocommerce ratings when deactivating.
+
 
  
 
