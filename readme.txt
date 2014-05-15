@@ -114,5 +114,8 @@ Yes. To connect your social accounts to Yotpo, just log into yotpo.com, and clic
 = 1.0.8 - 25/02/2014 =
 * Change language code length. 
 * Mail After Purchase will be sent when order status is changing from a remote source.  
+
+= 1.1.1 - 15/05/2014 =
+* Bug fixes. 
  
 

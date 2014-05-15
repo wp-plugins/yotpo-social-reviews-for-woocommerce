@@ -3,7 +3,7 @@
 	Plugin Name: Yotpo Social Reviews for Woocommerce
 	Description: Yotpo Social Reviews helps Woocommerce store owners generate a ton of reviews for their products. Yotpo is the only solution which makes it easy to share your reviews automatically to your social networks to gain a boost in traffic and an increase in sales.
 	Author: Yotpo
-	Version: 1.0.8
+	Version: 1.1.1
 	Author URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link	
 	Plugin URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link
  */
@@ -227,10 +227,7 @@ function wc_yotpo_get_single_map_data($order_id) {
 		$data['email'] = $order->billing_email;
 		$data['customer_name'] = $order->billing_first_name.' '.$order->billing_last_name;
 		$data['order_id'] = $order_id;
-		$data['currency_iso'] = $order->order_custom_fields['_order_currency'];
-		if(is_array($data['currency_iso'])) {
-			$data['currency_iso'] = $data['currency_iso'][0];
-		}
+		$data['currency_iso'] = wc_yotpo_get_order_currency($order);
 		$products_arr = array();
 		foreach ($order->get_items() as $product) 
 		{
@@ -348,10 +345,7 @@ function wc_yotpo_send_past_orders() {
 function wc_yotpo_conversion_track($order_id) {
 	$yotpo_settings = get_option('yotpo_settings', wc_yotpo_get_degault_settings());
 	$order = new WC_Order($order_id);
-	$currency = $order->order_custom_fields['_order_currency'];
-	if(is_array($currency)) {
-		$currency = $currency[0];
-	}
+	$currency = wc_yotpo_get_order_currency($order);
 	
 	$conversion_params = "app_key="      .$yotpo_settings['app_key'].
            				 "&order_id="    .$order_id.
@@ -379,7 +373,8 @@ function wc_yotpo_get_degault_settings() {
 
 function wc_yotpo_admin_styles($hook) {
 	if($hook == 'toplevel_page_woocommerce-yotpo-settings-page') {		
-		wp_enqueue_script( 'yotpoSettingsJs', plugins_url('assets/js/settings.js', __FILE__), array('jquery-effects-core'));		
+		wp_enqueue_script( 'yotpoSettingsJs', plugins_url('assets/js/settings.js', __FILE__), array('jquery-effects-core'));
+		wp_localize_script('yotpoSettingsJs', 'download_reviews_url', plugins_url('export_reviews.php', __FILE__));				
 		wp_enqueue_style( 'yotpoSettingsStylesheet', plugins_url('assets/css/yotpo.css', __FILE__));
 	}
 	wp_enqueue_style('yotpoSideLogoStylesheet', plugins_url('assets/css/side-menu-logo.css', __FILE__));
@@ -400,4 +395,19 @@ function wc_yotpo_disable_tab_manager_managment($allowed, $tab = null) {
 		$allowed = false;
 		return false;
 	}
+}
+
+function wc_yotpo_get_order_currency($order) {
+	if(is_null($order) || !is_object($order)) {
+		return '';
+	}
+	if(method_exists($order,'get_order_currency')) { 
+		return $order->get_order_currency();
+	}
+	if(isset($order->order_custom_fields) && isset($order->order_custom_fields['_order_currency'])) {		
+ 		if(is_array($order->order_custom_fields['_order_currency'])) {
+ 			return $order->order_custom_fields['_order_currency'][0];
+ 		}	
+	}
+	return '';
 }
