@@ -3,7 +3,7 @@
 	Plugin Name: Yotpo Social Reviews for Woocommerce
 	Description: Yotpo Social Reviews helps Woocommerce store owners generate a ton of reviews for their products. Yotpo is the only solution which makes it easy to share your reviews automatically to your social networks to gain a boost in traffic and an increase in sales.
 	Author: Yotpo
-	Version: 1.1.1
+	Version: 1.1.3
 	Author URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link	
 	Plugin URI: http://www.yotpo.com?utm_source=yotpo_plugin_woocommerce&utm_medium=plugin_page_link&utm_campaign=woocommerce_plugin_page_link
  */
@@ -17,6 +17,17 @@ add_action( 'woocommerce_order_status_completed', 'wc_yotpo_map');
 function wc_yotpo_init() {
 	$is_admin = is_admin();	
 	if($is_admin) {
+		if (isset($_GET['download_exported_reviews'])) {
+			if(current_user_can('manage_options')) {
+				require('classes/class-wc-yotpo-export-reviews.php');	
+				$export = new Yotpo_Review_Export();
+				list($file, $errors) = $export->exportReviews();	
+				if(is_null($errors)) {
+					$export->downloadReviewToBrowser($file);	
+				}
+			}
+			exit;
+		}		
 		include( plugin_dir_path( __FILE__ ) . 'templates/wc-yotpo-settings.php');
 		include(plugin_dir_path( __FILE__ ) . 'lib/yotpo-api/Yotpo.php');
 		add_action( 'admin_menu', 'wc_yotpo_admin_settings' );
@@ -94,16 +105,12 @@ function wc_yotpo_show_widget() {
 	$product = get_product();
 	if($product->post->comment_status == 'open') {		
 		$product_data = wc_yotpo_get_product_data($product);	
-		$yotpo_div = "<div class='yotpo reviews' 
-	 				data-appkey='".$product_data['app_key']."'
-	   				data-domain='".$product_data['shop_domain']."'
+		$yotpo_div = "<div class='yotpo yotpo-main-widget'
 	   				data-product-id='".$product_data['id']."'
-	   				data-product-models='".$product_data['product-models']."'
 	   				data-name='".$product_data['title']."' 
 	   				data-url='".$product_data['url']."' 
 	   				data-image-url='".$product_data['image-url']."' 
 	  				data-description='".$product_data['description']."' 
-	  				data-bread-crumbs=''
 	  				data-lang='".$product_data['lang']."'></div>";
 		echo $yotpo_div;
 	}						
@@ -124,7 +131,9 @@ function wc_yotpo_show_widget_in_tab($tabs) {
 
 function wc_yotpo_load_js(){
 	if(wc_yotpo_is_who_commerce_installed()) {		
-    	wp_enqueue_script( 'yquery', plugins_url('assets/js/headerScript.js', __FILE__) ,null,null);    	
+    	wp_enqueue_script( 'yquery', plugins_url('assets/js/headerScript.js', __FILE__) ,null,null);
+		$settings = get_option('yotpo_settings',wc_yotpo_get_degault_settings());
+		wp_localize_script('yquery', 'yotpo_settings', array('app_key' => $settings['app_key']));    	    	
 	}
 }
 
@@ -145,15 +154,8 @@ function wc_yotpo_show_buttomline() {
 	if($show_bottom_line) {
 		$product_data = wc_yotpo_get_product_data($product);	
 		$yotpo_div = "<div class='yotpo bottomLine' 
-	   				data-appkey='".$product_data['app_key']."'
-	   				data-domain='".$product_data['shop_domain']."'
 	   				data-product-id='".$product_data['id']."'
-	   				data-product-models='".$product_data['product-models']."'
-	   				data-name='".$product_data['title']."' 
 	   				data-url='".$product_data['url']."' 
-	   				data-image-url='".$product_data['image-url']."' 
-	   				data-description='".$product_data['description']."' 
-	   				data-bread-crumbs=''
 	   				data-lang='".$product_data['lang']."'></div>";
 		echo $yotpo_div;	
 	}	
@@ -373,8 +375,7 @@ function wc_yotpo_get_degault_settings() {
 
 function wc_yotpo_admin_styles($hook) {
 	if($hook == 'toplevel_page_woocommerce-yotpo-settings-page') {		
-		wp_enqueue_script( 'yotpoSettingsJs', plugins_url('assets/js/settings.js', __FILE__), array('jquery-effects-core'));
-		wp_localize_script('yotpoSettingsJs', 'download_reviews_url', plugins_url('export_reviews.php', __FILE__));				
+		wp_enqueue_script( 'yotpoSettingsJs', plugins_url('assets/js/settings.js', __FILE__), array('jquery-effects-core'));				
 		wp_enqueue_style( 'yotpoSettingsStylesheet', plugins_url('assets/css/yotpo.css', __FILE__));
 	}
 	wp_enqueue_style('yotpoSideLogoStylesheet', plugins_url('assets/css/side-menu-logo.css', __FILE__));
